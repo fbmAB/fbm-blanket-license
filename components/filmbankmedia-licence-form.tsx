@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import Image from "next/image"
+import { StripePaymentForm } from "./stripe-payment-form"
 
 const industries = [
   // Left column
@@ -114,6 +115,12 @@ export function FilmbankmediaLicenceForm() {
     if (currentStep === 1) {
       setCurrentStep(2)
     } else {
+      if (formData.paymentMethod === "card") {
+        // Card payment will be handled by StripePaymentForm component
+        return
+      }
+
+      // Handle invoice payment (existing logic)
       setIsSubmitting(true)
       setSubmitError("")
 
@@ -178,6 +185,15 @@ export function FilmbankmediaLicenceForm() {
         [field]: value,
       },
     }))
+  }
+
+  const handlePaymentSuccess = (applicationId: string) => {
+    setApplicationId(applicationId)
+    setSubmitSuccess(true)
+  }
+
+  const handlePaymentError = (error: string) => {
+    setSubmitError(error)
   }
 
   const unitPrice = getPrice()
@@ -571,6 +587,30 @@ export function FilmbankmediaLicenceForm() {
           </RadioGroup>
         </div>
 
+        {formData.paymentMethod === "card" && (
+          <div className="mb-8">
+            <h3 className="text-lg font-medium text-slate-900 mb-4">Card Payment</h3>
+            <StripePaymentForm
+              amount={total}
+              formData={{
+                ...formData,
+                selectedIndustry,
+                quantity,
+                coverageArea: industriesRequiringCoverage.includes(selectedIndustry) ? coverageArea : undefined,
+                unitPrice: getPrice(),
+                subtotal: getPrice() * quantity,
+                total: getPrice() * quantity,
+                premisesAddress: sameAsBilling ? formData.billingAddress : formData.premisesAddress,
+                sameAsBilling,
+              }}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+            />
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex justify-between">
           <Button
@@ -581,32 +621,41 @@ export function FilmbankmediaLicenceForm() {
           >
             Back
           </Button>
-          <Button
-            onClick={handleNext}
-            disabled={!formData.agreeToTerms || !formData.paymentMethod || isSubmitting}
-            className="px-8 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-colors border-0 disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Submitting...
-              </>
-            ) : (
-              "Submit"
-            )}
-          </Button>
+          {formData.paymentMethod === "invoice" && (
+            <Button
+              onClick={handleNext}
+              disabled={!formData.agreeToTerms || !formData.paymentMethod || isSubmitting}
+              className="px-8 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-colors border-0 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Submitting...
+                </>
+              ) : (
+                "Submit"
+              )}
+            </Button>
+          )}
         </div>
 
         {submitError && (
