@@ -310,7 +310,8 @@ export function FilmbankmediaLicenceForm() {
       if (quantity <= 30) {
         return 588.9 // Minimum fee for 30 employees or less
       } else {
-        return quantity * 19.63 // £19.63 per employee for more than 30
+        const additionalEmployees = quantity - 30
+        return 588.9 + additionalEmployees * 19.63 // Fixed calculation: base fee + additional employees beyond 30
       }
     }
 
