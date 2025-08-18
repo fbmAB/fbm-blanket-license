@@ -52,12 +52,13 @@ export function FilmbankmediaLicenceForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedIndustry, setSelectedIndustry] = useState("Sports and Social Clubs")
   const [quantity, setQuantity] = useState(1)
+  const [sameAsBilling, setSameAsBilling] = useState(true)
   const [formData, setFormData] = useState({
     organisationName: "",
-    contactName: "",
+    firstName: "",
+    lastName: "",
     telephone: "",
-    title: "",
-    phoneAlternate: "",
+    jobTitle: "",
     email: "",
     billingAddress: {
       street: "",
@@ -231,15 +232,28 @@ export function FilmbankmediaLicenceForm() {
           {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <Label htmlFor="contactName" className="text-sm font-medium text-slate-700 mb-2 block">
-                Name
+              <Label htmlFor="firstName" className="text-sm font-medium text-slate-700 mb-2 block">
+                First Name
               </Label>
               <Input
-                id="contactName"
-                value={formData.contactName}
-                onChange={(e) => updateFormData("contactName", e.target.value)}
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => updateFormData("firstName", e.target.value)}
               />
             </div>
+            <div>
+              <Label htmlFor="lastName" className="text-sm font-medium text-slate-700 mb-2 block">
+                Last Name
+              </Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => updateFormData("lastName", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
               <Label htmlFor="telephone" className="text-sm font-medium text-slate-700 mb-2 block">
                 Telephone
@@ -250,34 +264,15 @@ export function FilmbankmediaLicenceForm() {
                 onChange={(e) => updateFormData("telephone", e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <Label htmlFor="title" className="text-sm font-medium text-slate-700 mb-2 block">
-                Title/Position
-              </Label>
-              <Select value={formData.title} onValueChange={(value) => updateFormData("title", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select title" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mr">Mr</SelectItem>
-                  <SelectItem value="mrs">Mrs</SelectItem>
-                  <SelectItem value="ms">Ms</SelectItem>
-                  <SelectItem value="dr">Dr</SelectItem>
-                  <SelectItem value="prof">Prof</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="phoneAlternate" className="text-sm font-medium text-slate-700 mb-2 block">
-                Phone (alternate)
+              <Label htmlFor="jobTitle" className="text-sm font-medium text-slate-700 mb-2 block">
+                Job Title/Position
               </Label>
               <Input
-                id="phoneAlternate"
-                value={formData.phoneAlternate}
-                onChange={(e) => updateFormData("phoneAlternate", e.target.value)}
+                id="jobTitle"
+                value={formData.jobTitle}
+                onChange={(e) => updateFormData("jobTitle", e.target.value)}
+                placeholder="Enter your job title"
               />
             </div>
           </div>
@@ -347,51 +342,73 @@ export function FilmbankmediaLicenceForm() {
           {/* Premises Address */}
           <div className="mb-8">
             <h3 className="text-lg font-medium text-slate-900 mb-4">Premises Address</h3>
-            <div className="space-y-4">
-              <Input
-                placeholder="Street Address"
-                value={formData.premisesAddress.street}
-                onChange={(e) => updateAddressData("premisesAddress", "street", e.target.value)}
-              />
-              <Input
-                placeholder="Address Line 2"
-                value={formData.premisesAddress.addressLine2}
-                onChange={(e) => updateAddressData("premisesAddress", "addressLine2", e.target.value)}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  placeholder="City"
-                  value={formData.premisesAddress.city}
-                  onChange={(e) => updateAddressData("premisesAddress", "city", e.target.value)}
+            <div className="mb-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sameAsBilling"
+                  checked={sameAsBilling}
+                  onCheckedChange={(checked) => {
+                    setSameAsBilling(checked as boolean)
+                    if (checked) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        premisesAddress: { ...prev.billingAddress },
+                      }))
+                    }
+                  }}
                 />
-                <Input
-                  placeholder="County/State/Region"
-                  value={formData.premisesAddress.county}
-                  onChange={(e) => updateAddressData("premisesAddress", "county", e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                  value={formData.premisesAddress.country}
-                  onValueChange={(value) => updateAddressData("premisesAddress", "country", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                    <SelectItem value="United States">United States</SelectItem>
-                    <SelectItem value="Canada">Canada</SelectItem>
-                    <SelectItem value="Australia">Australia</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="Postal Code"
-                  value={formData.premisesAddress.postalCode}
-                  onChange={(e) => updateAddressData("premisesAddress", "postalCode", e.target.value)}
-                />
+                <Label htmlFor="sameAsBilling" className="text-sm text-slate-700">
+                  Same as billing address
+                </Label>
               </div>
             </div>
+            {!sameAsBilling && (
+              <div className="space-y-4">
+                <Input
+                  placeholder="Street Address"
+                  value={formData.premisesAddress.street}
+                  onChange={(e) => updateAddressData("premisesAddress", "street", e.target.value)}
+                />
+                <Input
+                  placeholder="Address Line 2"
+                  value={formData.premisesAddress.addressLine2}
+                  onChange={(e) => updateAddressData("premisesAddress", "addressLine2", e.target.value)}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    placeholder="City"
+                    value={formData.premisesAddress.city}
+                    onChange={(e) => updateAddressData("premisesAddress", "city", e.target.value)}
+                  />
+                  <Input
+                    placeholder="County/State/Region"
+                    value={formData.premisesAddress.county}
+                    onChange={(e) => updateAddressData("premisesAddress", "county", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    value={formData.premisesAddress.country}
+                    onValueChange={(value) => updateAddressData("premisesAddress", "country", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                      <SelectItem value="United States">United States</SelectItem>
+                      <SelectItem value="Canada">Canada</SelectItem>
+                      <SelectItem value="Australia">Australia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Postal Code"
+                    value={formData.premisesAddress.postalCode}
+                    onChange={(e) => updateAddressData("premisesAddress", "postalCode", e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Pricing Summary */}
@@ -430,11 +447,11 @@ export function FilmbankmediaLicenceForm() {
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="card" id="card" />
-                <Label htmlFor="card">Credit/Debit Card</Label>
+                <Label htmlFor="card">Pay by Card</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="paypal" id="paypal" />
-                <Label htmlFor="paypal">PayPal</Label>
+                <RadioGroupItem value="invoice" id="invoice" />
+                <Label htmlFor="invoice">Pay by Invoice</Label>
               </div>
             </RadioGroup>
           </div>
