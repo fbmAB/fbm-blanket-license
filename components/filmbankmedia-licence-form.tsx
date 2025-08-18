@@ -48,11 +48,29 @@ const industryPricing = {
   default: 25.0,
 }
 
+const coverageAreaOptions = [
+  { value: "1-500", label: "1-500 m2", price: 126.1 },
+  { value: "501-750", label: "501-750 m2", price: 189.14 },
+  { value: "751-1000", label: "751-1000 m2", price: 252.2 },
+]
+
+const industriesRequiringCoverage = [
+  "Campgrounds and Caravan Sites",
+  "Sports and Social Clubs",
+  "Takeaway, Café & Restaurants",
+]
+
 export function FilmbankmediaLicenceForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedIndustry, setSelectedIndustry] = useState("Sports and Social Clubs")
   const [quantity, setQuantity] = useState(1)
+  const [coverageArea, setCoverageArea] = useState("1-500")
   const [sameAsBilling, setSameAsBilling] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState("")
+  const [applicationId, setApplicationId] = useState("")
+
   const [formData, setFormData] = useState({
     organisationName: "",
     firstName: "",
@@ -81,15 +99,66 @@ export function FilmbankmediaLicenceForm() {
   })
 
   const getPrice = () => {
-    return industryPricing[selectedIndustry as keyof typeof industryPricing] || industryPricing.default
+    const basePrice = industryPricing[selectedIndustry as keyof typeof industryPricing] || industryPricing.default
+
+    // Add coverage area cost if industry requires it
+    if (industriesRequiringCoverage.includes(selectedIndustry)) {
+      const coverageOption = coverageAreaOptions.find((option) => option.value === coverageArea)
+      return basePrice + (coverageOption?.price || 0)
+    }
+
+    return basePrice
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 1) {
       setCurrentStep(2)
     } else {
-      // Handle form submission
-      console.log("Form submitted:", { selectedIndustry, quantity, formData })
+      setIsSubmitting(true)
+      setSubmitError("")
+
+      try {
+        const submissionData = {
+          selectedIndustry,
+          quantity,
+          coverageArea: industriesRequiringCoverage.includes(selectedIndustry) ? coverageArea : undefined,
+          unitPrice: getPrice(),
+          subtotal: getPrice() * quantity,
+          total: getPrice() * quantity,
+          organisationName: formData.organisationName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          telephone: formData.telephone,
+          jobTitle: formData.jobTitle,
+          email: formData.email,
+          billingAddress: formData.billingAddress,
+          premisesAddress: sameAsBilling ? formData.billingAddress : formData.premisesAddress,
+          sameAsBilling,
+          agreeToTerms: formData.agreeToTerms,
+          paymentMethod: formData.paymentMethod,
+        }
+
+        const response = await fetch("/api/licence-applications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(submissionData),
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to submit application")
+        }
+
+        setApplicationId(result.applicationId)
+        setSubmitSuccess(true)
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : "An unexpected error occurred")
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -182,6 +251,40 @@ export function FilmbankmediaLicenceForm() {
     )
   }
 
+  if (submitSuccess) {
+    return (
+      <Card className="w-full bg-white shadow-lg">
+        <CardHeader className="bg-slate-700 px-6 py-6">
+          <div className="flex items-center justify-between">
+            <Image src="/filmbank-logo.png" alt="Filmbankmedia" width={200} height={40} className="h-8 w-auto" />
+            <h1 className="text-2xl font-semibold text-white tracking-wide">Blanket Licence</h1>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-6 text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2">Application Submitted Successfully!</h2>
+            <p className="text-slate-600 mb-4">
+              Thank you for your licence application. We have received your submission and will process it shortly.
+            </p>
+            <div className="bg-slate-50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-slate-600 mb-1">Application ID:</p>
+              <p className="font-mono text-sm font-medium text-slate-900">{applicationId}</p>
+            </div>
+            <p className="text-sm text-slate-600">
+              You will receive a confirmation email at <strong>{formData.email}</strong> with further details.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="w-full bg-white shadow-lg">
       <CardHeader className="bg-slate-700 px-6 py-6">
@@ -212,113 +315,196 @@ export function FilmbankmediaLicenceForm() {
           </div>
         </div>
 
-        {/* Payment Details */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-slate-900 mb-6 border-b border-slate-200 pb-2">
-            Enter Payment Details
-          </h2>
-
-          {/* Organisation Details */}
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">Organisation details</h3>
-            <Input
-              placeholder="Organisation name"
-              value={formData.organisationName}
-              onChange={(e) => updateFormData("organisationName", e.target.value)}
-              className="mb-4"
-            />
+        {industriesRequiringCoverage.includes(selectedIndustry) && (
+          <div className="mb-8">
+            <h3 className="text-lg font-medium text-slate-900 mb-4">Select your coverage area.</h3>
+            <Select value={coverageArea} onValueChange={setCoverageArea}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {coverageAreaOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label} (£{option.price.toFixed(2)}+vat)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        )}
 
-          {/* Contact Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <Label htmlFor="firstName" className="text-sm font-medium text-slate-700 mb-2 block">
-                First Name
-              </Label>
-              <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => updateFormData("firstName", e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName" className="text-sm font-medium text-slate-700 mb-2 block">
-                Last Name
-              </Label>
-              <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => updateFormData("lastName", e.target.value)}
-              />
-            </div>
-          </div>
+        {/* Organisation Details */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Organisation details</h3>
+          <Input
+            placeholder="Organisation name"
+            value={formData.organisationName}
+            onChange={(e) => updateFormData("organisationName", e.target.value)}
+            className="mb-4"
+          />
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <Label htmlFor="telephone" className="text-sm font-medium text-slate-700 mb-2 block">
-                Telephone
-              </Label>
-              <Input
-                id="telephone"
-                value={formData.telephone}
-                onChange={(e) => updateFormData("telephone", e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="jobTitle" className="text-sm font-medium text-slate-700 mb-2 block">
-                Job Title/Position
-              </Label>
-              <Input
-                id="jobTitle"
-                value={formData.jobTitle}
-                onChange={(e) => updateFormData("jobTitle", e.target.value)}
-                placeholder="Enter your job title"
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <Label htmlFor="email" className="text-sm font-medium text-slate-700 mb-2 block">
-              Email
+        {/* Contact Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <Label htmlFor="firstName" className="text-sm font-medium text-slate-700 mb-2 block">
+              First Name
             </Label>
             <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => updateFormData("email", e.target.value)}
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => updateFormData("firstName", e.target.value)}
             />
           </div>
+          <div>
+            <Label htmlFor="lastName" className="text-sm font-medium text-slate-700 mb-2 block">
+              Last Name
+            </Label>
+            <Input
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => updateFormData("lastName", e.target.value)}
+            />
+          </div>
+        </div>
 
-          {/* Billing Address */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">Billing Address</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <Label htmlFor="telephone" className="text-sm font-medium text-slate-700 mb-2 block">
+              Telephone
+            </Label>
+            <Input
+              id="telephone"
+              value={formData.telephone}
+              onChange={(e) => updateFormData("telephone", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="jobTitle" className="text-sm font-medium text-slate-700 mb-2 block">
+              Job Title/Position
+            </Label>
+            <Input
+              id="jobTitle"
+              value={formData.jobTitle}
+              onChange={(e) => updateFormData("jobTitle", e.target.value)}
+              placeholder="Enter your job title"
+            />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <Label htmlFor="email" className="text-sm font-medium text-slate-700 mb-2 block">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => updateFormData("email", e.target.value)}
+          />
+        </div>
+
+        {/* Billing Address */}
+        <div className="mb-8">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Billing Address</h3>
+          <div className="space-y-4">
+            <Input
+              placeholder="Street Address"
+              value={formData.billingAddress.street}
+              onChange={(e) => updateAddressData("billingAddress", "street", e.target.value)}
+            />
+            <Input
+              placeholder="Address Line 2"
+              value={formData.billingAddress.addressLine2}
+              onChange={(e) => updateAddressData("billingAddress", "addressLine2", e.target.value)}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                placeholder="City"
+                value={formData.billingAddress.city}
+                onChange={(e) => updateAddressData("billingAddress", "city", e.target.value)}
+              />
+              <Input
+                placeholder="County/State/Region"
+                value={formData.billingAddress.county}
+                onChange={(e) => updateAddressData("billingAddress", "county", e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                value={formData.billingAddress.country}
+                onValueChange={(value) => updateAddressData("billingAddress", "country", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                  <SelectItem value="United States">United States</SelectItem>
+                  <SelectItem value="Canada">Canada</SelectItem>
+                  <SelectItem value="Australia">Australia</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Postal Code"
+                value={formData.billingAddress.postalCode}
+                onChange={(e) => updateAddressData("billingAddress", "postalCode", e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Premises Address */}
+        <div className="mb-8">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Premises Address</h3>
+          <div className="mb-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sameAsBilling"
+                checked={sameAsBilling}
+                onCheckedChange={(checked) => {
+                  setSameAsBilling(checked as boolean)
+                  if (checked) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      premisesAddress: { ...prev.billingAddress },
+                    }))
+                  }
+                }}
+              />
+              <Label htmlFor="sameAsBilling" className="text-sm text-slate-700">
+                Same as billing address
+              </Label>
+            </div>
+          </div>
+          {!sameAsBilling && (
             <div className="space-y-4">
               <Input
                 placeholder="Street Address"
-                value={formData.billingAddress.street}
-                onChange={(e) => updateAddressData("billingAddress", "street", e.target.value)}
+                value={formData.premisesAddress.street}
+                onChange={(e) => updateAddressData("premisesAddress", "street", e.target.value)}
               />
               <Input
                 placeholder="Address Line 2"
-                value={formData.billingAddress.addressLine2}
-                onChange={(e) => updateAddressData("billingAddress", "addressLine2", e.target.value)}
+                value={formData.premisesAddress.addressLine2}
+                onChange={(e) => updateAddressData("premisesAddress", "addressLine2", e.target.value)}
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   placeholder="City"
-                  value={formData.billingAddress.city}
-                  onChange={(e) => updateAddressData("billingAddress", "city", e.target.value)}
+                  value={formData.premisesAddress.city}
+                  onChange={(e) => updateAddressData("premisesAddress", "city", e.target.value)}
                 />
                 <Input
                   placeholder="County/State/Region"
-                  value={formData.billingAddress.county}
-                  onChange={(e) => updateAddressData("billingAddress", "county", e.target.value)}
+                  value={formData.premisesAddress.county}
+                  onChange={(e) => updateAddressData("premisesAddress", "county", e.target.value)}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
-                  value={formData.billingAddress.country}
-                  onValueChange={(value) => updateAddressData("billingAddress", "country", value)}
+                  value={formData.premisesAddress.country}
+                  onValueChange={(value) => updateAddressData("premisesAddress", "country", value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -332,148 +518,115 @@ export function FilmbankmediaLicenceForm() {
                 </Select>
                 <Input
                   placeholder="Postal Code"
-                  value={formData.billingAddress.postalCode}
-                  onChange={(e) => updateAddressData("billingAddress", "postalCode", e.target.value)}
+                  value={formData.premisesAddress.postalCode}
+                  onChange={(e) => updateAddressData("premisesAddress", "postalCode", e.target.value)}
                 />
               </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Premises Address */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">Premises Address</h3>
-            <div className="mb-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sameAsBilling"
-                  checked={sameAsBilling}
-                  onCheckedChange={(checked) => {
-                    setSameAsBilling(checked as boolean)
-                    if (checked) {
-                      setFormData((prev) => ({
-                        ...prev,
-                        premisesAddress: { ...prev.billingAddress },
-                      }))
-                    }
-                  }}
-                />
-                <Label htmlFor="sameAsBilling" className="text-sm text-slate-700">
-                  Same as billing address
-                </Label>
-              </div>
-            </div>
-            {!sameAsBilling && (
-              <div className="space-y-4">
-                <Input
-                  placeholder="Street Address"
-                  value={formData.premisesAddress.street}
-                  onChange={(e) => updateAddressData("premisesAddress", "street", e.target.value)}
-                />
-                <Input
-                  placeholder="Address Line 2"
-                  value={formData.premisesAddress.addressLine2}
-                  onChange={(e) => updateAddressData("premisesAddress", "addressLine2", e.target.value)}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    placeholder="City"
-                    value={formData.premisesAddress.city}
-                    onChange={(e) => updateAddressData("premisesAddress", "city", e.target.value)}
-                  />
-                  <Input
-                    placeholder="County/State/Region"
-                    value={formData.premisesAddress.county}
-                    onChange={(e) => updateAddressData("premisesAddress", "county", e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Select
-                    value={formData.premisesAddress.country}
-                    onValueChange={(value) => updateAddressData("premisesAddress", "country", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                      <SelectItem value="United States">United States</SelectItem>
-                      <SelectItem value="Canada">Canada</SelectItem>
-                      <SelectItem value="Australia">Australia</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="Postal Code"
-                    value={formData.premisesAddress.postalCode}
-                    onChange={(e) => updateAddressData("premisesAddress", "postalCode", e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+        {/* Pricing Summary */}
+        <div className="mb-8 p-4 bg-slate-50 rounded-lg">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-slate-600">Subtotal</span>
+            <span className="text-sm font-medium">£{subtotal.toFixed(2)}</span>
           </div>
-
-          {/* Pricing Summary */}
-          <div className="mb-8 p-4 bg-slate-50 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-slate-600">Subtotal</span>
-              <span className="text-sm font-medium">£{subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center text-lg font-semibold">
-              <span>Total</span>
-              <span>£{total.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Terms Agreement */}
-          <div className="mb-6">
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="terms"
-                checked={formData.agreeToTerms}
-                onCheckedChange={(checked) => updateFormData("agreeToTerms", checked)}
-              />
-              <Label htmlFor="terms" className="text-sm text-slate-700 leading-relaxed">
-                I agree to the licensing terms & conditions and privacy policy
-              </Label>
-            </div>
-          </div>
-
-          {/* Payment Method */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">Choose your payment method</h3>
-            <RadioGroup
-              value={formData.paymentMethod}
-              onValueChange={(value) => updateFormData("paymentMethod", value)}
-              className="space-y-2"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="card" id="card" />
-                <Label htmlFor="card">Pay by Card</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="invoice" id="invoice" />
-                <Label htmlFor="invoice">Pay by Invoice</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between">
-            <Button
-              onClick={handleBack}
-              variant="outline"
-              className="px-8 py-2 border-slate-300 text-slate-700 hover:bg-slate-50 bg-transparent"
-            >
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={!formData.agreeToTerms || !formData.paymentMethod}
-              className="px-8 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-colors border-0 disabled:opacity-50"
-            >
-              Submit
-            </Button>
+          <div className="flex justify-between items-center text-lg font-semibold">
+            <span>Total</span>
+            <span>£{total.toFixed(2)}</span>
           </div>
         </div>
+
+        {/* Terms Agreement */}
+        <div className="mb-6">
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="terms"
+              checked={formData.agreeToTerms}
+              onCheckedChange={(checked) => updateFormData("agreeToTerms", checked)}
+            />
+            <Label htmlFor="terms" className="text-sm text-slate-700 leading-relaxed">
+              I agree to the licensing terms & conditions and privacy policy
+            </Label>
+          </div>
+        </div>
+
+        {/* Payment Method */}
+        <div className="mb-8">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Choose your payment method</h3>
+          <RadioGroup
+            value={formData.paymentMethod}
+            onValueChange={(value) => updateFormData("paymentMethod", value)}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="card" id="card" />
+              <Label htmlFor="card">Pay by Card</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="invoice" id="invoice" />
+              <Label htmlFor="invoice">Pay by Invoice</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between">
+          <Button
+            onClick={handleBack}
+            variant="outline"
+            className="px-8 py-2 border-slate-300 text-slate-700 hover:bg-slate-50 bg-transparent"
+            disabled={isSubmitting}
+          >
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={!formData.agreeToTerms || !formData.paymentMethod || isSubmitting}
+            className="px-8 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-colors border-0 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Submitting...
+              </>
+            ) : (
+              "Submit"
+            )}
+          </Button>
+        </div>
+
+        {submitError && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex">
+              <svg className="w-5 h-5 text-red-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Submission Error</h3>
+                <p className="text-sm text-red-700 mt-1">{submitError}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

@@ -1,0 +1,75 @@
+-- DynamoDB Table Creation Script for Filmbankmedia Licence Applications
+-- This script defines the table structure for storing form submissions
+
+-- Table Name: filmbankmedia-licence-applications
+-- Primary Key: id (String) - UUID for each submission
+-- Sort Key: submissionDate (String) - ISO timestamp
+
+-- Table Schema:
+-- {
+--   "id": "uuid-string",
+--   "submissionDate": "2024-01-15T10:30:00.000Z",
+--   "selectedIndustry": "Sports and Social Clubs",
+--   "quantity": 2,
+--   "coverageArea": "1-500", // Optional - only for specific industries
+--   "unitPrice": 25.00,
+--   "subtotal": 50.00,
+--   "total": 50.00,
+--   "organisationName": "Example Sports Club",
+--   "firstName": "John",
+--   "lastName": "Doe", 
+--   "telephone": "+44 20 1234 5678",
+--   "jobTitle": "Manager",
+--   "email": "john.doe@example.com",
+--   "billingAddress": {
+--     "street": "123 Main Street",
+--     "addressLine2": "Suite 100",
+--     "city": "London",
+--     "county": "Greater London",
+--     "country": "United Kingdom",
+--     "postalCode": "SW1A 1AA"
+--   },
+--   "premisesAddress": {
+--     "street": "123 Main Street",
+--     "addressLine2": "Suite 100", 
+--     "city": "London",
+--     "county": "Greater London",
+--     "country": "United Kingdom",
+--     "postalCode": "SW1A 1AA"
+--   },
+--   "sameAsBilling": true,
+--   "agreeToTerms": true,
+--   "paymentMethod": "card",
+--   "status": "submitted" // submitted, processing, completed, failed
+-- }
+
+-- AWS CLI Commands to create the table:
+-- aws dynamodb create-table \
+--   --table-name filmbankmedia-licence-applications \
+--   --attribute-definitions \
+--     AttributeName=id,AttributeType=S \
+--     AttributeName=submissionDate,AttributeType=S \
+--   --key-schema \
+--     AttributeName=id,KeyType=HASH \
+--     AttributeName=submissionDate,KeyType=RANGE \
+--   --billing-mode PAY_PER_REQUEST \
+--   --region us-east-1
+
+-- Global Secondary Index for querying by industry:
+-- aws dynamodb update-table \
+--   --table-name filmbankmedia-licence-applications \
+--   --attribute-definitions \
+--     AttributeName=selectedIndustry,AttributeType=S \
+--     AttributeName=submissionDate,AttributeType=S \
+--   --global-secondary-index-updates \
+--     '[{
+--       "Create": {
+--         "IndexName": "industry-date-index",
+--         "KeySchema": [
+--           {"AttributeName": "selectedIndustry", "KeyType": "HASH"},
+--           {"AttributeName": "submissionDate", "KeyType": "RANGE"}
+--         ],
+--         "Projection": {"ProjectionType": "ALL"},
+--         "BillingMode": "PAY_PER_REQUEST"
+--       }
+--     }]'
