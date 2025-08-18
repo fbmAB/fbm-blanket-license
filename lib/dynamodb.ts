@@ -1,12 +1,10 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb"
+import { crypto } from "crypto"
 
 const client = new DynamoDBClient({
-  region: process.env.FILMBANK_AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.FILMBANK_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.FILMBANK_AWS_SECRET_ACCESS_KEY!,
-  },
+  region: process.env.NEXT_PUBLIC_FILMBANK_AWS_REGION || "us-east-1",
+  // Credentials will be automatically provided by IAM role
 })
 
 const docClient = DynamoDBDocumentClient.from(client)
@@ -50,13 +48,26 @@ export interface LicenceApplication {
   status: "submitted" | "processing" | "completed" | "failed"
 }
 
-export async function saveLicenceApplication(application: LicenceApplication): Promise<void> {
+export async function saveLicenceApplication(
+  application: Omit<LicenceApplication, "id" | "submissionDate" | "status">,
+): Promise<{ id: string }> {
+  const id = crypto.randomUUID()
+  const submissionDate = new Date().toISOString()
+
+  const fullApplication: LicenceApplication = {
+    ...application,
+    id,
+    submissionDate,
+    status: "submitted",
+  }
+
   const command = new PutCommand({
     TableName: TABLE_NAME,
-    Item: application,
+    Item: fullApplication,
   })
 
   await docClient.send(command)
+  return { id }
 }
 
 export async function getLicenceApplication(id: string, submissionDate: string): Promise<LicenceApplication | null> {

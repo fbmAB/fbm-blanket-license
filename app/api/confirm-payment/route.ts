@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
-import { saveLicenceApplication } from "@/lib/dynamodb-test"
+import { saveLicenceApplication } from "@/lib/dynamodb"
 
 export async function POST(request: NextRequest) {
   try {
