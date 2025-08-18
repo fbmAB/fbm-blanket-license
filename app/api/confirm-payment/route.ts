@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
     const { paymentIntentId, formData } = body
 
     console.log("[v0] Confirming payment for:", paymentIntentId)
+    console.log("[v0] Form data received:", JSON.stringify(formData, null, 2))
 
     // Retrieve the payment intent to verify it was successful
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
@@ -32,7 +33,22 @@ export async function POST(request: NextRequest) {
       paymentMethod: "card",
     }
 
-    const result = await saveLicenceApplication(applicationData)
+    console.log("[v0] Application data to save:", JSON.stringify(applicationData, null, 2))
+
+    let result
+    try {
+      console.log("[v0] Attempting to save to DynamoDB...")
+      result = await saveLicenceApplication(applicationData)
+      console.log("[v0] DynamoDB save successful:", result)
+    } catch (dbError) {
+      console.error("[v0] DynamoDB save failed:", dbError)
+      console.error("[v0] DynamoDB error details:", {
+        name: dbError instanceof Error ? dbError.name : "Unknown",
+        message: dbError instanceof Error ? dbError.message : "Unknown error",
+        stack: dbError instanceof Error ? dbError.stack : "No stack trace",
+      })
+      throw new Error(`Database save failed: ${dbError instanceof Error ? dbError.message : "Unknown error"}`)
+    }
 
     console.log("[v0] Application saved successfully:", result.id)
 
