@@ -122,8 +122,7 @@ function CheckoutForm({ amount, formData, onSuccess, onError, isSubmitting, setI
 
       console.log("[v0] Payment successful, confirming...")
 
-      // Confirm payment and save application
-      const confirmResponse = await fetch("/api/confirm-payment-simple", {
+      const confirmResponse = await fetch("/api/confirm-payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
