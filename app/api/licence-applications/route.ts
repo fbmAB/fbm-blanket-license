@@ -4,7 +4,9 @@ import { randomUUID } from "crypto"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] API route called")
     const body = await request.json()
+    console.log("[v0] Request body parsed:", Object.keys(body))
 
     // Validate required fields
     const requiredFields = [
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
     // Generate unique ID and timestamp
     const id = randomUUID()
     const submissionDate = new Date().toISOString()
+
+    console.log("[v0] Validation passed, creating licence application object")
 
     // Create the licence application object
     const licenceApplication: LicenceApplication = {
@@ -78,8 +82,12 @@ export async function POST(request: NextRequest) {
       status: "submitted",
     }
 
+    console.log("[v0] About to save to DynamoDB")
+
     // Save to DynamoDB
     await saveLicenceApplication(licenceApplication)
+
+    console.log("[v0] Successfully saved to DynamoDB")
 
     // Return success response with application ID
     return NextResponse.json({
@@ -88,7 +96,8 @@ export async function POST(request: NextRequest) {
       message: "Licence application submitted successfully",
     })
   } catch (error) {
-    console.error("Error saving licence application:", error)
+    console.error("[v0] Error in API route:", error)
+    console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
 
     return NextResponse.json(
       {
