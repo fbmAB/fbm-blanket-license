@@ -297,6 +297,11 @@ export function FilmbankmediaLicenceForm() {
   })
 
   const getPrice = () => {
+    if (selectedIndustry === "Campgrounds and Caravan Sites") {
+      const coverageOption = coverageAreaOptions.find((option) => option.value === coverageArea)
+      return coverageOption?.price || 0
+    }
+
     const basePrice = industryPricing[selectedIndustry as keyof typeof industryPricing] || industryPricing.default
 
     // Add coverage area cost if industry requires it
@@ -527,23 +532,6 @@ export function FilmbankmediaLicenceForm() {
           <Progress value={50} className="h-2" />
         </div>
 
-        <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2h4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-slate-700">Selected Industry:</p>
-              <p className="text-base font-semibold text-slate-900">{selectedIndustry}</p>
-            </div>
-          </div>
-        </div>
-
         {selectedIndustry !== "Campgrounds and Caravan Sites" && (
           <div className="mb-8 p-4 bg-sky-50 rounded-lg border border-sky-200">
             <h3 className="text-lg font-medium text-slate-900 mb-4">
@@ -569,7 +557,9 @@ export function FilmbankmediaLicenceForm() {
         )}
 
         {industriesRequiringCoverage.includes(selectedIndustry) && (
-          <div className="mb-8">
+          <div
+            className={`mb-8 ${selectedIndustry === "Campgrounds and Caravan Sites" ? "p-4 bg-sky-50 rounded-lg border border-sky-200" : ""}`}
+          >
             <h3 className="text-lg font-medium text-slate-900 mb-4">Select your coverage area.</h3>
             <Select value={coverageArea} onValueChange={setCoverageArea}>
               <SelectTrigger className="w-full">
