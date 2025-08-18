@@ -138,7 +138,7 @@ export function FilmbankmediaLicenceForm() {
           paymentMethod: formData.paymentMethod,
         }
 
-        const response = await fetch("/api/licence-applications", {
+        const response = await fetch("/api/licence-applications-test", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
