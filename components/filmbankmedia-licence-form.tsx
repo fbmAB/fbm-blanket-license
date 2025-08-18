@@ -45,6 +45,7 @@ const industryPricing = {
   Schools: 20.0,
   "Corporations (office spaces, manufacturing etc)": 35.0,
   "Gym and Health Clubs": 30.0,
+  "Care, Retirement and Sheltered schemes": 12.53,
   // Default pricing for other industries
   default: 25.0,
 }
@@ -60,6 +61,8 @@ const industriesRequiringCoverage = [
   "Sports and Social Clubs",
   "Takeaway, Café & Restaurants",
 ]
+
+const industriesRequiringVAT = ["Campgrounds and Caravan Sites", "Care, Retirement and Sheltered schemes"]
 
 const countries = [
   "Afghanistan",
@@ -305,6 +308,20 @@ export function FilmbankmediaLicenceForm() {
     return basePrice
   }
 
+  const getVATAmount = () => {
+    if (industriesRequiringVAT.includes(selectedIndustry)) {
+      const subtotal = getPrice() * (selectedIndustry === "Campgrounds and Caravan Sites" ? 1 : quantity)
+      return subtotal * 0.2 // 20% VAT
+    }
+    return 0
+  }
+
+  const getTotalWithVAT = () => {
+    const subtotal = getPrice() * (selectedIndustry === "Campgrounds and Caravan Sites" ? 1 : quantity)
+    const vat = getVATAmount()
+    return subtotal + vat
+  }
+
   const handleNext = async () => {
     if (currentStep === 1) {
       setCurrentStep(2)
@@ -392,7 +409,7 @@ export function FilmbankmediaLicenceForm() {
 
   const unitPrice = getPrice()
   const subtotal = unitPrice * quantity
-  const total = subtotal
+  const total = industriesRequiringVAT.includes(selectedIndustry) ? getTotalWithVAT() : subtotal
 
   if (currentStep === 1) {
     return (
@@ -527,20 +544,29 @@ export function FilmbankmediaLicenceForm() {
           </div>
         </div>
 
-        {/* Quantity Selection */}
-        <div className="mb-8 p-4 bg-sky-50 rounded-lg border border-sky-200">
-          <h3 className="text-lg font-medium text-slate-900 mb-4">How many licences do you want to purchase?</h3>
-          <div className="flex items-center gap-4">
-            <Input
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))}
-              className="w-20"
-            />
-            <span className="text-sm text-slate-600">£{unitPrice.toFixed(2)} each</span>
+        {selectedIndustry !== "Campgrounds and Caravan Sites" && (
+          <div className="mb-8 p-4 bg-sky-50 rounded-lg border border-sky-200">
+            <h3 className="text-lg font-medium text-slate-900 mb-4">
+              {selectedIndustry === "Care, Retirement and Sheltered schemes"
+                ? "How many beds on care, residential and Sheltered schemes do you want to licence?"
+                : "How many licences do you want to purchase?"}
+            </h3>
+            <div className="flex items-center gap-4">
+              <Input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))}
+                className="w-20"
+              />
+              <span className="text-sm text-slate-600">
+                £{unitPrice.toFixed(2)}{" "}
+                {selectedIndustry === "Care, Retirement and Sheltered schemes" ? "per bed" : "each"}
+                {selectedIndustry === "Care, Retirement and Sheltered schemes" && "+vat"}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {industriesRequiringCoverage.includes(selectedIndustry) && (
           <div className="mb-8">
@@ -759,12 +785,19 @@ export function FilmbankmediaLicenceForm() {
           )}
         </div>
 
-        {/* Pricing Summary */}
         <div className="mb-8 p-4 bg-slate-50 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-slate-600">Subtotal</span>
-            <span className="text-sm font-medium">£{subtotal.toFixed(2)}</span>
+            <span className="text-sm font-medium">
+              £{(getPrice() * (selectedIndustry === "Campgrounds and Caravan Sites" ? 1 : quantity)).toFixed(2)}
+            </span>
           </div>
+          {industriesRequiringVAT.includes(selectedIndustry) && (
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-slate-600">VAT (20%)</span>
+              <span className="text-sm font-medium">£{getVATAmount().toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center text-lg font-semibold">
             <span>Total</span>
             <span>£{total.toFixed(2)}</span>
