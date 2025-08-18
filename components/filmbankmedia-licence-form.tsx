@@ -62,7 +62,11 @@ const industriesRequiringCoverage = [
   "Takeaway, Café & Restaurants",
 ]
 
-const industriesRequiringVAT = ["Campgrounds and Caravan Sites", "Care, Retirement and Sheltered schemes"]
+const industriesRequiringVAT = [
+  "Campgrounds and Caravan Sites",
+  "Care, Retirement and Sheltered schemes",
+  "Corporations (office spaces, manufacturing etc)",
+]
 
 const countries = [
   "Afghanistan",
@@ -302,6 +306,14 @@ export function FilmbankmediaLicenceForm() {
       return coverageOption?.price || 0
     }
 
+    if (selectedIndustry === "Corporations (office spaces, manufacturing etc)") {
+      if (quantity <= 30) {
+        return 588.9 // Minimum fee for 30 employees or less
+      } else {
+        return quantity * 19.63 // £19.63 per employee for more than 30
+      }
+    }
+
     const basePrice = industryPricing[selectedIndustry as keyof typeof industryPricing] || industryPricing.default
 
     // Add coverage area cost if industry requires it
@@ -537,8 +549,15 @@ export function FilmbankmediaLicenceForm() {
             <h3 className="text-lg font-medium text-slate-900 mb-4">
               {selectedIndustry === "Care, Retirement and Sheltered schemes"
                 ? "How many beds on care, residential and Sheltered schemes do you want to licence?"
-                : "How many licences do you want to purchase?"}
+                : selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+                  ? "How many employees do you have?"
+                  : "How many licences do you want to purchase?"}
             </h3>
+            {selectedIndustry === "Corporations (office spaces, manufacturing etc)" && (
+              <p className="text-sm text-slate-600 mb-4">
+                Note: minimum fee £588.90+vat applies to companies with 30 employees or less
+              </p>
+            )}
             <div className="flex items-center gap-4">
               <Input
                 type="number"
@@ -548,9 +567,19 @@ export function FilmbankmediaLicenceForm() {
                 className="w-20"
               />
               <span className="text-sm text-slate-600">
-                £{unitPrice.toFixed(2)}{" "}
-                {selectedIndustry === "Care, Retirement and Sheltered schemes" ? "per bed" : "each"}
-                {selectedIndustry === "Care, Retirement and Sheltered schemes" && "+vat"}
+                {selectedIndustry === "Corporations (office spaces, manufacturing etc)" ? (
+                  quantity <= 30 ? (
+                    "£588.90+vat (minimum fee)"
+                  ) : (
+                    "£19.63+vat per employee"
+                  )
+                ) : (
+                  <>
+                    £{unitPrice.toFixed(2)}{" "}
+                    {selectedIndustry === "Care, Retirement and Sheltered schemes" ? "per bed" : "each"}
+                    {selectedIndustry === "Care, Retirement and Sheltered schemes" && "+vat"}
+                  </>
+                )}
               </span>
             </div>
           </div>
