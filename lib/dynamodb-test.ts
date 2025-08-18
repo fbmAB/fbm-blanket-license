@@ -3,10 +3,7 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dyn
 
 const client = new DynamoDBClient({
   region: process.env.NEXT_PUBLIC_FILMBANK_AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.NEXT_PUBLIC_FILMBANK_AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.NEXT_PUBLIC_FILMBANK_AWS_SECRET_ACCESS_KEY || "",
-  },
+  // No credentials specified - will use IAM role attached to Amplify app
 })
 
 const docClient = DynamoDBDocumentClient.from(client)
@@ -52,8 +49,7 @@ export async function saveLicenceApplication(application: LicenceApplication): P
   console.log("[v0] DynamoDB save function called")
   console.log("[v0] Environment variables check:")
   console.log("[v0] Region:", process.env.NEXT_PUBLIC_FILMBANK_AWS_REGION ? "Set" : "Missing")
-  console.log("[v0] Access Key:", process.env.NEXT_PUBLIC_FILMBANK_AWS_ACCESS_KEY_ID ? "Set" : "Missing")
-  console.log("[v0] Secret Key:", process.env.NEXT_PUBLIC_FILMBANK_AWS_SECRET_ACCESS_KEY ? "Set" : "Missing")
+  console.log("[v0] Using IAM role for authentication")
 
   try {
     const command = new PutCommand({
