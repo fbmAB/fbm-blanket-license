@@ -122,7 +122,7 @@ function CheckoutForm({ amount, formData, onSuccess, onError, isSubmitting, setI
 
       console.log("[v0] Payment successful, confirming...")
 
-      const confirmResponse = await fetch("/api/confirm-payment", {
+      const confirmResponse = await fetch("/api/confirm-payment-working", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
