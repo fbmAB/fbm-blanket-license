@@ -67,6 +67,13 @@ const industriesRequiringVAT = [
   "Care, Retirement and Sheltered schemes",
   "Corporations (office spaces, manufacturing etc)",
   "Doctors, Dentists & Healthcare",
+  "Hairdressers, Beauty Salons and Tattoo Studios",
+]
+
+const chairTableOptions = [
+  { value: "1-10", label: "1 - 10 (£440.46+vat)", price: 440.46 },
+  { value: "11-20", label: "11 - 20 (£660.55+vat)", price: 660.55 },
+  { value: "over-20", label: "Over 20 (£880.82+vat)", price: 880.82 },
 ]
 
 const countries = [
@@ -268,6 +275,7 @@ export function FilmbankmediaLicenceForm() {
   const [selectedIndustry, setSelectedIndustry] = useState("Sports and Social Clubs")
   const [quantity, setQuantity] = useState(1)
   const [coverageArea, setCoverageArea] = useState("1-500")
+  const [chairTableRange, setChairTableRange] = useState("1-10")
   const [healthcareLocations, setHealthcareLocations] = useState(1)
   const [healthcareBedrooms, setHealthcareBedrooms] = useState(0)
   const [sameAsBilling, setSameAsBilling] = useState(true)
@@ -304,15 +312,14 @@ export function FilmbankmediaLicenceForm() {
   })
 
   const getPrice = () => {
-    if (selectedIndustry === "Campgrounds and Caravan Sites") {
-      const coverageOption = coverageAreaOptions.find((option) => option.value === coverageArea)
-      return coverageOption?.price || 0
+    if (selectedIndustry === "Care, Retirement and Sheltered schemes") {
+      return 12.53 // Price per bed
     }
 
     if (selectedIndustry === "Doctors, Dentists & Healthcare") {
-      const locationsCost = healthcareLocations * 294.69
-      const bedroomsCost = healthcareBedrooms * 10.44
-      return locationsCost + bedroomsCost
+      const locationCost = healthcareLocations * 294.69
+      const bedroomCost = healthcareBedrooms * 10.44
+      return locationCost + bedroomCost
     }
 
     if (selectedIndustry === "Corporations (office spaces, manufacturing etc)") {
@@ -322,6 +329,11 @@ export function FilmbankmediaLicenceForm() {
         const additionalEmployees = quantity - 30
         return 588.9 + additionalEmployees * 19.63 // Fixed calculation: base fee + additional employees beyond 30
       }
+    }
+
+    if (selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios") {
+      const chairOption = chairTableOptions.find((option) => option.value === chairTableRange)
+      return chairOption?.price || 440.46
     }
 
     const basePrice = industryPricing[selectedIndustry as keyof typeof industryPricing] || industryPricing.default
@@ -340,8 +352,10 @@ export function FilmbankmediaLicenceForm() {
       const subtotal =
         getPrice() *
         (selectedIndustry === "Campgrounds and Caravan Sites" ||
+        selectedIndustry === "Care, Retirement and Sheltered schemes" ||
         selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
-        selectedIndustry === "Doctors, Dentists & Healthcare"
+        selectedIndustry === "Doctors, Dentists & Healthcare" ||
+        selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios"
           ? 1
           : quantity)
       return subtotal * 0.2 // 20% VAT
@@ -353,8 +367,10 @@ export function FilmbankmediaLicenceForm() {
     const subtotal =
       getPrice() *
       (selectedIndustry === "Campgrounds and Caravan Sites" ||
+      selectedIndustry === "Care, Retirement and Sheltered schemes" ||
       selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
-      selectedIndustry === "Doctors, Dentists & Healthcare"
+      selectedIndustry === "Doctors, Dentists & Healthcare" ||
+      selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios"
         ? 1
         : quantity)
     const vat = getVATAmount()
@@ -395,6 +411,8 @@ export function FilmbankmediaLicenceForm() {
           paymentMethod: formData.paymentMethod,
           healthcareLocations: selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareLocations : undefined,
           healthcareBedrooms: selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareBedrooms : undefined,
+          chairTableRange:
+            selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios" ? chairTableRange : undefined,
         }
 
         const response = await fetch("/api/licence-applications", {
@@ -452,8 +470,10 @@ export function FilmbankmediaLicenceForm() {
   const subtotal =
     unitPrice *
     (selectedIndustry === "Campgrounds and Caravan Sites" ||
+    selectedIndustry === "Care, Retirement and Sheltered schemes" ||
     selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
-    selectedIndustry === "Doctors, Dentists & Healthcare"
+    selectedIndustry === "Doctors, Dentists & Healthcare" ||
+    selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios"
       ? 1
       : quantity)
   const total = industriesRequiringVAT.includes(selectedIndustry) ? getTotalWithVAT() : subtotal
@@ -661,6 +681,26 @@ export function FilmbankmediaLicenceForm() {
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios" && (
+          <div className="mb-6 p-6 bg-slate-50 rounded-lg border border-slate-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 bg-sky-500 text-white p-3 rounded-md">
+              How many chairs or treatment tables do you have?
+            </h3>
+            <Select value={chairTableRange} onValueChange={setChairTableRange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {chairTableOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
@@ -886,17 +926,7 @@ export function FilmbankmediaLicenceForm() {
         <div className="mb-8 p-4 bg-slate-50 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-slate-600">Subtotal</span>
-            <span className="text-sm font-medium">
-              £
-              {(
-                getPrice() *
-                (selectedIndustry === "Campgrounds and Caravan Sites" ||
-                selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
-                selectedIndustry === "Doctors, Dentists & Healthcare"
-                  ? 1
-                  : quantity)
-              ).toFixed(2)}
-            </span>
+            <span className="text-sm font-medium">£{subtotal.toFixed(2)}</span>
           </div>
           {industriesRequiringVAT.includes(selectedIndustry) && (
             <div className="flex justify-between items-center mb-2">
@@ -962,6 +992,8 @@ export function FilmbankmediaLicenceForm() {
                   selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareLocations : undefined,
                 healthcareBedrooms:
                   selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareBedrooms : undefined,
+                chairTableRange:
+                  selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios" ? chairTableRange : undefined,
               }}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
