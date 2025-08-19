@@ -66,6 +66,7 @@ const industriesRequiringVAT = [
   "Campgrounds and Caravan Sites",
   "Care, Retirement and Sheltered schemes",
   "Corporations (office spaces, manufacturing etc)",
+  "Doctors, Dentists & Healthcare",
 ]
 
 const countries = [
@@ -267,6 +268,8 @@ export function FilmbankmediaLicenceForm() {
   const [selectedIndustry, setSelectedIndustry] = useState("Sports and Social Clubs")
   const [quantity, setQuantity] = useState(1)
   const [coverageArea, setCoverageArea] = useState("1-500")
+  const [healthcareLocations, setHealthcareLocations] = useState(1)
+  const [healthcareBedrooms, setHealthcareBedrooms] = useState(0)
   const [sameAsBilling, setSameAsBilling] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -306,6 +309,12 @@ export function FilmbankmediaLicenceForm() {
       return coverageOption?.price || 0
     }
 
+    if (selectedIndustry === "Doctors, Dentists & Healthcare") {
+      const locationsCost = healthcareLocations * 294.69
+      const bedroomsCost = healthcareBedrooms * 10.44
+      return locationsCost + bedroomsCost
+    }
+
     if (selectedIndustry === "Corporations (office spaces, manufacturing etc)") {
       if (quantity <= 30) {
         return 588.9 // Minimum fee for 30 employees or less
@@ -331,7 +340,8 @@ export function FilmbankmediaLicenceForm() {
       const subtotal =
         getPrice() *
         (selectedIndustry === "Campgrounds and Caravan Sites" ||
-        selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+        selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
+        selectedIndustry === "Doctors, Dentists & Healthcare"
           ? 1
           : quantity)
       return subtotal * 0.2 // 20% VAT
@@ -343,7 +353,8 @@ export function FilmbankmediaLicenceForm() {
     const subtotal =
       getPrice() *
       (selectedIndustry === "Campgrounds and Caravan Sites" ||
-      selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+      selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
+      selectedIndustry === "Doctors, Dentists & Healthcare"
         ? 1
         : quantity)
     const vat = getVATAmount()
@@ -382,6 +393,8 @@ export function FilmbankmediaLicenceForm() {
           sameAsBilling,
           agreeToTerms: formData.agreeToTerms,
           paymentMethod: formData.paymentMethod,
+          healthcareLocations: selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareLocations : undefined,
+          healthcareBedrooms: selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareBedrooms : undefined,
         }
 
         const response = await fetch("/api/licence-applications", {
@@ -439,7 +452,8 @@ export function FilmbankmediaLicenceForm() {
   const subtotal =
     unitPrice *
     (selectedIndustry === "Campgrounds and Caravan Sites" ||
-    selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+    selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
+    selectedIndustry === "Doctors, Dentists & Healthcare"
       ? 1
       : quantity)
   const total = industriesRequiringVAT.includes(selectedIndustry) ? getTotalWithVAT() : subtotal
@@ -560,43 +574,92 @@ export function FilmbankmediaLicenceForm() {
           <Progress value={50} className="h-2" />
         </div>
 
-        {selectedIndustry !== "Campgrounds and Caravan Sites" && (
-          <div className="mb-8 p-4 bg-sky-50 rounded-lg border border-sky-200">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">
-              {selectedIndustry === "Care, Retirement and Sheltered schemes"
-                ? "How many beds on care, residential and Sheltered schemes do you want to licence?"
-                : selectedIndustry === "Corporations (office spaces, manufacturing etc)"
-                  ? "How many employees do you have?"
-                  : "How many licences do you want to purchase?"}
-            </h3>
-            {selectedIndustry === "Corporations (office spaces, manufacturing etc)" && (
-              <p className="text-sm text-slate-600 mb-4">
-                Note: minimum fee £588.90+vat applies to companies with 30 employees or less
-              </p>
-            )}
-            <div className="flex items-center gap-4">
-              <Input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))}
-                className="w-20"
-              />
-              <span className="text-sm text-slate-600">
-                {selectedIndustry === "Corporations (office spaces, manufacturing etc)" ? (
-                  quantity <= 30 ? (
-                    "£588.90+vat (minimum fee)"
+        {selectedIndustry !== "Campgrounds and Caravan Sites" &&
+          selectedIndustry !== "Doctors, Dentists & Healthcare" && (
+            <div className="mb-8 p-4 bg-sky-50 rounded-lg border border-sky-200">
+              <h3 className="text-lg font-medium text-slate-900 mb-4">
+                {selectedIndustry === "Care, Retirement and Sheltered schemes"
+                  ? "How many beds on care, residential and Sheltered schemes do you want to licence?"
+                  : selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+                    ? "How many employees do you have?"
+                    : "How many licences do you want to purchase?"}
+              </h3>
+              {selectedIndustry === "Corporations (office spaces, manufacturing etc)" && (
+                <p className="text-sm text-slate-600 mb-4">
+                  Note: minimum fee £588.90+vat applies to companies with 30 employees or less
+                </p>
+              )}
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))}
+                  className="w-20"
+                />
+                <span className="text-sm text-slate-600">
+                  {selectedIndustry === "Corporations (office spaces, manufacturing etc)" ? (
+                    quantity <= 30 ? (
+                      "£588.90+vat (minimum fee)"
+                    ) : (
+                      "£19.63+vat per employee"
+                    )
                   ) : (
-                    "£19.63+vat per employee"
-                  )
-                ) : (
-                  <>
-                    £{unitPrice.toFixed(2)}{" "}
-                    {selectedIndustry === "Care, Retirement and Sheltered schemes" ? "per bed" : "each"}
-                    {selectedIndustry === "Care, Retirement and Sheltered schemes" && "+vat"}
-                  </>
-                )}
-              </span>
+                    <>
+                      £{unitPrice.toFixed(2)}{" "}
+                      {selectedIndustry === "Care, Retirement and Sheltered schemes" ? "per bed" : "each"}
+                      {selectedIndustry === "Care, Retirement and Sheltered schemes" && "+vat"}
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
+        {selectedIndustry === "Doctors, Dentists & Healthcare" && (
+          <div className="mb-8 space-y-6">
+            <div className="p-4 bg-sky-50 rounded-lg border border-sky-200">
+              <h3 className="text-lg font-medium text-slate-900 mb-4">Doctors, Dentists & Healthcare (Locations)</h3>
+              <p className="text-sm text-slate-600 mb-4">How many locations do you want to licence? (£294.69+vat)</p>
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min="1"
+                  value={healthcareLocations}
+                  onChange={(e) => setHealthcareLocations(Math.max(1, Number.parseInt(e.target.value) || 1))}
+                  className="w-20"
+                />
+                <span className="text-sm text-slate-600">£294.69 per location +vat</span>
+              </div>
+              <div className="mt-2">
+                <span className="text-sm font-medium text-slate-700">
+                  Price: £{(healthcareLocations * 294.69).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-sky-50 rounded-lg border border-sky-200">
+              <h3 className="text-lg font-medium text-slate-900 mb-4">
+                Doctors, Dentists & Healthcare (Inpatient bedrooms)
+              </h3>
+              <p className="text-sm text-slate-600 mb-4">
+                How many inpatient bedrooms do you have? (£10.44+vat per bed)
+              </p>
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min="0"
+                  value={healthcareBedrooms}
+                  onChange={(e) => setHealthcareBedrooms(Math.max(0, Number.parseInt(e.target.value) || 0))}
+                  className="w-20"
+                />
+                <span className="text-sm text-slate-600">£10.44 per bed +vat</span>
+              </div>
+              <div className="mt-2">
+                <span className="text-sm font-medium text-slate-700">
+                  Price: £{(healthcareBedrooms * 10.44).toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -828,7 +891,8 @@ export function FilmbankmediaLicenceForm() {
               {(
                 getPrice() *
                 (selectedIndustry === "Campgrounds and Caravan Sites" ||
-                selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+                selectedIndustry === "Corporations (office spaces, manufacturing etc)" ||
+                selectedIndustry === "Doctors, Dentists & Healthcare"
                   ? 1
                   : quantity)
               ).toFixed(2)}
@@ -894,6 +958,10 @@ export function FilmbankmediaLicenceForm() {
                 total: getPrice() * quantity,
                 premisesAddress: sameAsBilling ? formData.billingAddress : formData.premisesAddress,
                 sameAsBilling,
+                healthcareLocations:
+                  selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareLocations : undefined,
+                healthcareBedrooms:
+                  selectedIndustry === "Doctors, Dentists & Healthcare" ? healthcareBedrooms : undefined,
               }}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
