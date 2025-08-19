@@ -594,9 +594,10 @@ export function FilmbankmediaLicenceForm() {
           <Progress value={50} className="h-2" />
         </div>
 
+        {/* Quantity Selection - Hide for industries with custom questions */}
         {selectedIndustry !== "Campgrounds and Caravan Sites" &&
-          selectedIndustry !== "Doctors, Dentists & Healthcare" && (
-            <div className="mb-8 p-4 bg-sky-50 rounded-lg border border-sky-200">
+          selectedIndustry !== "Hairdressers, Beauty Salons and Tattoo Studios" && (
+            <div className="mb-6 p-6 bg-slate-50 rounded-lg border border-slate-200">
               <h3 className="text-lg font-medium text-slate-900 mb-4">
                 {selectedIndustry === "Care, Retirement and Sheltered schemes"
                   ? "How many beds on care, residential and Sheltered schemes do you want to licence?"
@@ -618,19 +619,13 @@ export function FilmbankmediaLicenceForm() {
                   className="w-20"
                 />
                 <span className="text-sm text-slate-600">
-                  {selectedIndustry === "Corporations (office spaces, manufacturing etc)" ? (
-                    quantity <= 30 ? (
-                      "£588.90+vat (minimum fee)"
-                    ) : (
-                      "£19.63+vat per employee"
-                    )
-                  ) : (
-                    <>
-                      £{unitPrice.toFixed(2)}{" "}
-                      {selectedIndustry === "Care, Retirement and Sheltered schemes" ? "per bed" : "each"}
-                      {selectedIndustry === "Care, Retirement and Sheltered schemes" && "+vat"}
-                    </>
-                  )}
+                  {selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+                    ? quantity <= 30
+                      ? "£588.90+vat (minimum fee)"
+                      : "£19.63+vat per employee"
+                    : selectedIndustry === "Care, Retirement and Sheltered schemes"
+                      ? "£12.53+vat per bed"
+                      : `£${getPrice().toFixed(2)} each`}
                 </span>
               </div>
             </div>
@@ -686,7 +681,7 @@ export function FilmbankmediaLicenceForm() {
 
         {selectedIndustry === "Hairdressers, Beauty Salons and Tattoo Studios" && (
           <div className="mb-6 p-6 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 bg-sky-500 text-white p-3 rounded-md">
+            <h3 className="text-lg font-medium text-slate-900 mb-4">
               How many chairs or treatment tables do you have?
             </h3>
             <Select value={chairTableRange} onValueChange={setChairTableRange}>
