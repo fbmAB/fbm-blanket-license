@@ -328,14 +328,24 @@ export function FilmbankmediaLicenceForm() {
 
   const getVATAmount = () => {
     if (industriesRequiringVAT.includes(selectedIndustry)) {
-      const subtotal = getPrice() * (selectedIndustry === "Campgrounds and Caravan Sites" ? 1 : quantity)
+      const subtotal =
+        getPrice() *
+        (selectedIndustry === "Campgrounds and Caravan Sites" ||
+        selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+          ? 1
+          : quantity)
       return subtotal * 0.2 // 20% VAT
     }
     return 0
   }
 
   const getTotalWithVAT = () => {
-    const subtotal = getPrice() * (selectedIndustry === "Campgrounds and Caravan Sites" ? 1 : quantity)
+    const subtotal =
+      getPrice() *
+      (selectedIndustry === "Campgrounds and Caravan Sites" ||
+      selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+        ? 1
+        : quantity)
     const vat = getVATAmount()
     return subtotal + vat
   }
@@ -426,7 +436,12 @@ export function FilmbankmediaLicenceForm() {
   }
 
   const unitPrice = getPrice()
-  const subtotal = unitPrice * quantity
+  const subtotal =
+    unitPrice *
+    (selectedIndustry === "Campgrounds and Caravan Sites" ||
+    selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+      ? 1
+      : quantity)
   const total = industriesRequiringVAT.includes(selectedIndustry) ? getTotalWithVAT() : subtotal
 
   if (currentStep === 1) {
@@ -809,7 +824,14 @@ export function FilmbankmediaLicenceForm() {
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-slate-600">Subtotal</span>
             <span className="text-sm font-medium">
-              £{(getPrice() * (selectedIndustry === "Campgrounds and Caravan Sites" ? 1 : quantity)).toFixed(2)}
+              £
+              {(
+                getPrice() *
+                (selectedIndustry === "Campgrounds and Caravan Sites" ||
+                selectedIndustry === "Corporations (office spaces, manufacturing etc)"
+                  ? 1
+                  : quantity)
+              ).toFixed(2)}
             </span>
           </div>
           {industriesRequiringVAT.includes(selectedIndustry) && (
